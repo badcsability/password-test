@@ -2,7 +2,8 @@
 import argparse
 import base64
 import os
-
+from pw_class import pw, loginList, pwStruct
+from key_manager import KeyManager
 
 def add_pass(service, password, username):
     print("added")
