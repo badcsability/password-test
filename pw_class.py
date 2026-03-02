@@ -4,7 +4,6 @@ import struct
 from dotenv import load_dotenv
 from key_manager import KeyManager
 
-
 class pw:
     """
     structure to store the login information of a single account
@@ -21,7 +20,6 @@ class pw:
         self.url = url
         self.key
         
-        
     def show_usr(self):
         return self.key.decrypt(self.user)
         
@@ -33,6 +31,17 @@ class pw:
         
     def update_usr(self, new_usr):
         self.user = self.key.encrypt(new_usr)
+        
+    def serialize(self):
+        """
+        convert login information to store into JSON file 
+        """
+        return {
+            "service" : self.service,
+            "user" : self.user,
+            "pwd" : self.pwd,
+            "url" : self.url
+        }
 
 class loginList:
     """
@@ -41,7 +50,15 @@ class loginList:
     def __init__(self, site_name):
         self.logins = []
         self.site_name = site_name
-
+        
+    def serialize(self):
+        """
+        convert list of logins into json format
+        """
+        return {
+            "site-name" : self.site_name,
+            "logins" : [login.serialize() for login in self.logins]
+        }
 
 class pwStruct:
     """
@@ -51,3 +68,15 @@ class pwStruct:
         self.pass_list = {}
         self.services = set()
         
+    def serialize(self):
+        """
+        convert all lists of logins into json format
+        """
+        return {
+            "pass-list" : {
+                service: login_list.serialize() for service, login_list in self.pass_list.items()
+            },
+            "services" : list(self.services)
+        }
+        
+   
