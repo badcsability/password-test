@@ -1,9 +1,77 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import base64
 import os
+import json
 from pw_class import pw, loginList, pwStruct
+from pathlib import Path
+from dotenv import load_dotenv
 from key_manager import KeyManager
+
+JSON_FILE_PATH = ""
+
+
+def init():
+    global JSON_FILE_PATH
+    created = KeyManager.new_env(os.path.join(os.getcwd(), ".env"))
+    load_dotenv()
+    JSON_FILE_PATH = os.getenv("PWD_FILE")
+    print(JSON_FILE_PATH)
+    if not os.path.exists(JSON_FILE_PATH):
+        data = {
+            "pass-list": {},
+            "services": {},
+        }
+        try:
+            with open(JSON_FILE_PATH, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except OSError as e:
+            print(f"Failed to create file at '{JSON_FILE_PATH}': {e}")
+            return
+
+        print(
+            f"Password store file '{JSON_FILE_PATH}' did not exist. "
+            "Created new file with empty structure."
+        )
+        return
+
+    if not os.path.isfile(JSON_FILE_PATH):
+        print(f"Path '{JSON_FILE_PATH}' exists but is not a regular file.")
+        return
+
+    try:
+        with open(JSON_FILE_PATH, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+        data = json.loads(content)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"Password store file '{JSON_FILE_PATH}' is invalid JSON: {e}")
+        return
+
+    if not isinstance(data, dict):
+        print(
+            f"Password store file '{JSON_FILE_PATH}' is invalid: "
+            "top-level JSON value must be an object."
+        )
+        return
+
+    if "pass-list" not in data or "services" not in data:
+        print(
+            f"Password store file '{JSON_FILE_PATH}' is invalid: "
+            "missing 'pass-list' or 'services' keys."
+        )
+        return
+
+    if not isinstance(data["pass-list"], dict) or not isinstance(
+        data["services"], dict
+    ):
+        print(
+            f"Password store file '{JSON_FILE_PATH}' is invalid: "
+            "'pass-list' must be an object and 'services' must be an object."
+        )
+        return
+
+    print(f"Password store file '{JSON_FILE_PATH}' exists and is valid.")
 
 def add_pass(service, password, username):
     print("added")
@@ -42,7 +110,7 @@ def main():
     
     match command:
         case "init":
-            print("init")
+            init()
         case "add":
             add_pass(args.u, args.p, args.s)
         case "remove":

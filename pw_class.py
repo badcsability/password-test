@@ -66,7 +66,7 @@ class pwStruct:
     """
     def __init__(self, key):
         self.pass_list = {}
-        self.services = set()
+        self.services = {}
         
     def serialize(self):
         """
