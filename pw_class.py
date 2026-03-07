@@ -64,9 +64,9 @@ class pwStruct:
     """
     password structure to store lists of logins for various services(eg. gmail, amazon)
     """
-    def __init__(self, key):
+    def __init__(self):
         self.pass_list = {}
-        self.services = {}
+        self.services = set()
         
     def serialize(self):
         """

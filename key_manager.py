@@ -11,8 +11,8 @@ class KeyManager():
         """
         self.env_path = Path(env_path)
         self.env_path.parent.mkdir(parents=True, exist_ok=True)
-
-        load_dotenv(self.env_path)
+        
+        load_dotenv()
         key = os.getenv("ENCRYPTION_KEY")
         if not key:
             raise ValueError("Encryption key not found")

@@ -4,20 +4,30 @@ import hashlib
 import base64
 import os
 import json
+import getpass
 from pw_class import pw, loginList, pwStruct
 from pathlib import Path
 from dotenv import load_dotenv
 from key_manager import KeyManager
 
+pw_struct = pwStruct()
+key_manager = None
 JSON_FILE_PATH = ""
 
 
 def init():
+    """
+    initialize the password key manager and set json file
+    """
     global JSON_FILE_PATH
-    created = KeyManager.new_env(os.path.join(os.getcwd(), ".env"))
+    global key_manager
+    key_manager = KeyManager.new_env(os.path.join(os.getcwd(), ".env"))
     load_dotenv()
     JSON_FILE_PATH = os.getenv("PWD_FILE")
-    print(JSON_FILE_PATH)
+    """
+    create a new file if file does not exist
+    """
+    #print(JSON_FILE_PATH)
     if not os.path.exists(JSON_FILE_PATH):
         data = {
             "pass-list": {},
@@ -35,7 +45,9 @@ def init():
             "Created new file with empty structure."
         )
         return
-
+    """
+    verify that file path is valid and contains the correct data structure
+    """
     if not os.path.isfile(JSON_FILE_PATH):
         print(f"Path '{JSON_FILE_PATH}' exists but is not a regular file.")
         return
@@ -48,13 +60,6 @@ def init():
         print(f"Password store file '{JSON_FILE_PATH}' is invalid JSON: {e}")
         return
 
-    if not isinstance(data, dict):
-        print(
-            f"Password store file '{JSON_FILE_PATH}' is invalid: "
-            "top-level JSON value must be an object."
-        )
-        return
-
     if "pass-list" not in data or "services" not in data:
         print(
             f"Password store file '{JSON_FILE_PATH}' is invalid: "
@@ -63,17 +68,25 @@ def init():
         return
 
     if not isinstance(data["pass-list"], dict) or not isinstance(
-        data["services"], dict
+        data["services"], list
     ):
         print(
             f"Password store file '{JSON_FILE_PATH}' is invalid: "
-            "'pass-list' must be an object and 'services' must be an object."
+            "'pass-list' must be an object and 'services' must be a list."
         )
         return
 
     print(f"Password store file '{JSON_FILE_PATH}' exists and is valid.")
 
 def add_pass(service, password, username):
+    """
+    create a new password object
+    """
+    input_service = input("Enter the site this login will be used for")
+    input_usr = input("Enter the username")
+    input_pwd = getpass.getpass(prompt="Enter your password: ")
+    input_url = input("Enter the url of the site, otherwise press enter")
+    new_pw = pw(input_usr, input_pwd, input_service, key_manager, input_url)
     print("added")
 
 def rem_pass(service, username):
@@ -97,6 +110,8 @@ def main():
     rem_pw = functions.add_parser("remove")
     rem_pw.add_argument("-s", type=str, required=True)
     rem_pw.add_argument("-u", type=str)
+
+    change_pw = functions.add_parser("change")
     
     get_pw = functions.add_parser("get")
     get_pw.add_argument("-su", type=str)
@@ -104,6 +119,8 @@ def main():
     show_pw = functions.add_parser("show")
     
     init_pw = functions.add_parser("init")
+
+    clear_pw = functions.add_parser("clear")
     
     args = parser.parse_args()
     command = args.command
@@ -115,10 +132,14 @@ def main():
             add_pass(args.u, args.p, args.s)
         case "remove":
             rem_pass(args.s, args.u)
+        case "change":
+            print("changed")
         case "get":
             get_pass(args.su)
         case "show":
             show_all()
+        case "clear":
+            print("cleared")
         case _:
             print("Unknown command, please try again")
     
