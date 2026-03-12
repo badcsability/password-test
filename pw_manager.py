@@ -5,6 +5,7 @@ import base64
 import os
 import json
 import getpass
+from datetime import datetime, timezone
 from pw_class import pw, loginList, pwStruct
 from pathlib import Path
 from dotenv import load_dotenv
@@ -14,79 +15,61 @@ pw_struct = pwStruct()
 key_manager = None
 JSON_FILE_PATH = ""
 
-
 def init():
     """
-    initialize the password key manager and set json file
+    initialize the password key manager, set JSON file path, and
+    ensure the on-disk password store exists and is valid.
     """
     global JSON_FILE_PATH
     global key_manager
+    global pw_struct
+
     key_manager = KeyManager.new_env(os.path.join(os.getcwd(), ".env"))
     load_dotenv()
     JSON_FILE_PATH = os.getenv("PWD_FILE")
-    """
-    create a new file if file does not exist
-    """
-    #print(JSON_FILE_PATH)
+
+    if not JSON_FILE_PATH:
+        raise RuntimeError("PWD_FILE environment variable is not set")
+
+    # create a new file if file does not exist
     if not os.path.exists(JSON_FILE_PATH):
+        # pw_struct was already initialized with created/last_modified timestamps
         data = {
             "pass-list": {},
-            "services": {},
+            "meta": {
+                "created_at": pw_struct.created,
+                "last_modified": pw_struct.last_modified,
+            },
         }
         try:
             with open(JSON_FILE_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except OSError as e:
-            print(f"Failed to create file at '{JSON_FILE_PATH}': {e}")
-            return
+            raise RuntimeError(f"Failed to create file at '{JSON_FILE_PATH}': {e}")
 
         print(
             f"Password store file '{JSON_FILE_PATH}' did not exist. "
             "Created new file with empty structure."
         )
         return
-    """
-    verify that file path is valid and contains the correct data structure
-    """
-    if not os.path.isfile(JSON_FILE_PATH):
-        print(f"Path '{JSON_FILE_PATH}' exists but is not a regular file.")
-        return
 
-    try:
-        with open(JSON_FILE_PATH, "r", encoding="utf-8") as f:
-            content = f.read().strip()
-        data = json.loads(content)
-    except (OSError, json.JSONDecodeError) as e:
-        print(f"Password store file '{JSON_FILE_PATH}' is invalid JSON: {e}")
-        return
+    # otherwise, strictly load existing file
+    pw_struct = pwStruct.load_from_file(JSON_FILE_PATH, key_manager)
+    print(f"Password store file '{JSON_FILE_PATH}' exists and was loaded successfully.")
 
-    if "pass-list" not in data or "services" not in data:
-        print(
-            f"Password store file '{JSON_FILE_PATH}' is invalid: "
-            "missing 'pass-list' or 'services' keys."
-        )
-        return
-
-    if not isinstance(data["pass-list"], dict) or not isinstance(
-        data["services"], list
-    ):
-        print(
-            f"Password store file '{JSON_FILE_PATH}' is invalid: "
-            "'pass-list' must be an object and 'services' must be a list."
-        )
-        return
-
-    print(f"Password store file '{JSON_FILE_PATH}' exists and is valid.")
-
-def add_pass(service, password, username):
+def add_pass():
     """
     create a new password object
     """
-    input_service = input("Enter the site this login will be used for")
-    input_usr = input("Enter the username")
+    global pw_struct
+    input_service = input("Enter the site this login will be used for: ")
+    input_usr = input("Enter the username: ")
     input_pwd = getpass.getpass(prompt="Enter your password: ")
-    input_url = input("Enter the url of the site, otherwise press enter")
+    input_url = input("Enter the url of the site, otherwise press enter: ")
+
     new_pw = pw(input_usr, input_pwd, input_service, key_manager, input_url)
+    pw_struct.add_pw(new_pw)
+    pw_struct.save_to_file(JSON_FILE_PATH)
     print("added")
 
 def rem_pass(service, username):
@@ -103,9 +86,6 @@ def main():
     functions = parser.add_subparsers(dest="command",required = True)
     
     add_pw = functions.add_parser("add")
-    add_pw.add_argument("-u", type=str, required=True)
-    add_pw.add_argument("-p", type=str, required=True)
-    add_pw.add_argument("-s", type=str, required=True)
     
     rem_pw = functions.add_parser("remove")
     rem_pw.add_argument("-s", type=str, required=True)
@@ -129,7 +109,7 @@ def main():
         case "init":
             init()
         case "add":
-            add_pass(args.u, args.p, args.s)
+            add_pass()
         case "remove":
             rem_pass(args.s, args.u)
         case "change":
