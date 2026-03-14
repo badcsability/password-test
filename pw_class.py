@@ -191,13 +191,32 @@ class pwStruct:
             self.pass_list[service_name] = new_login
         self.pass_list[service_name].add_pw(new_pw)
         self.last_modified = new_pw.created_at
-        
+
         print("added") 
     
     def rem_pw(self, service:str, username:str):
         if service not in self.pass_list:
-            print("This service does not exist!")
+            print(f"This service does not exist")
         self.pass_list[service].rem_pw(username)
+
+
+    def get_pw(self, service: str):
+        """
+        Return a list of (username, password) tuples for the given service.
+        Error handling done in pw_manager
+        Updates last_accessed on each returned pw entry.
+        """
+        login_list = self.pass_list[service]
+        results = []
+
+        now_ts = datetime.now(timezone.utc).timestamp()
+        for entry in login_list.logins:
+            username = entry.show_usr()
+            password = entry.show_pwd()
+            entry.last_accessed = now_ts
+            results.append((username, password))
+
+        return results
 
     def serialize(self):
         """
@@ -222,12 +241,7 @@ class pwStruct:
         self.created = 0.0
         self.last_modified = 0.0
         try:
-            with open(file_path, 'w') as f:
-                json.dump({
-                    "pass-list" : {},
-                    "created_at": 0.0,
-                    "last_modified": 0.0,
-                }, f)
+            os.remove(file_path)
         except Exception as e:
             print(f"Failed to access '{file_path}' : {e}")
 

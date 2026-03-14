@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pw_class import pw, loginList, pwStruct
 from pathlib import Path
 from dotenv import load_dotenv
+import pyperclip
 from key_manager import KeyManager
 
 pw_struct = pwStruct()
@@ -72,11 +73,83 @@ def add_pass():
     pw_struct.save_to_file(JSON_FILE_PATH)
     print("added")
 
+
+def copy_to_clipboard(text: str) -> None:
+    """
+    Copy the given text to the system clipboard.
+
+    Uses pyperclip so it can work across platforms.
+    """
+    try:
+        pyperclip.copy(text)
+    except Exception as e:
+        print(f"Failed to copy to clipboard: {e}")
+
+
 def rem_pass(service, username):
     print("removed")
     
-def get_pass(service_username):
-    print("got")
+def get_pass():
+    """
+    return the usernames/passwords for a specific service
+    """
+    global pw_struct
+    input_service = input("Enter the site to find logins for: ")
+    service = input_service.strip()
+
+    if not service:
+        print("Error: service name must not be empty.")
+        return
+
+    try:
+        creds = pw_struct.get_pw(service)
+    except ValueError as e:
+        print(f"Error: {e}")
+        return
+    except KeyError:
+        print(f"No logins stored for service '{service}'.")
+        return
+
+    if not creds:
+        print(f"No logins found for service '{service}'.")
+        return
+
+    # Single-login case: auto-copy password
+    if len(creds) == 1:
+        username, password = creds[0]
+        copy_to_clipboard(password)
+        print(f"Found 1 login for '{service}' with username: {username}")
+        print("Password has been copied to the clipboard.")
+        return
+
+    # Multiple-logins case: list usernames and ask which to copy
+    print(f"Found {len(creds)} logins for '{service}':")
+    for idx, (username, _password) in enumerate(creds, start=1):
+        print(f"[{idx}] {username}")
+
+    choice_str = input(
+        "Enter the login number to copy its password (or press Enter to cancel): "
+    ).strip()
+
+    if choice_str == "":
+        print("Cancelled; no password was copied.")
+        return
+
+    try:
+        choice = int(choice_str)
+    except ValueError:
+        print("Invalid selection. Please enter a number.")
+        return
+
+    if choice < 1 or choice > len(creds):
+        print("Selection out of range. No password was copied.")
+        return
+
+    username, password = creds[choice - 1]
+    copy_to_clipboard(password)
+    print(
+        f"Password for login {choice} (username: {username}) has been copied to the clipboard."
+    )
     
 def show_all():
     print("show")
@@ -94,7 +167,6 @@ def main():
     change_pw = functions.add_parser("change")
     
     get_pw = functions.add_parser("get")
-    get_pw.add_argument("-su", type=str)
     
     show_pw = functions.add_parser("show")
     
@@ -115,7 +187,7 @@ def main():
         case "change":
             print("changed")
         case "get":
-            get_pass(args.su)
+            get_pass()
         case "show":
             show_all()
         case "clear":
