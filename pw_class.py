@@ -13,7 +13,7 @@ class pw:
     """
     structure to store the login information of a single account
     """
-    def __init__(self, user, pwd, service, key, url="", *, encrypted: bool = False):
+    def __init__(self, user, pwd, service, key, url="None", *, encrypted: bool = False):
         """
         Initialize a pw instance.
 
@@ -131,13 +131,15 @@ class loginList:
         }
     
     def add_pw(self, new_pw:pw):
-        #do something
+        """
+        append new password object to list of logins
+        """
         self.logins.append(new_pw)
-        print("added to loginlist")
+        #print("added to loginlist")
 
     def rem_pw(self, usr:str):
         for login in self.logins:
-            if login.user == usr:
+            if login.show_usr() == usr:
                 self.logins.remove(login)
 
     @classmethod
@@ -194,11 +196,31 @@ class pwStruct:
 
         print("added") 
     
-    def rem_pw(self, service:str, username:str):
+    def rem_pw(self, service:str, username:str=""):
+        """
+        Given a service, either clear all logins for that service or for a specific username
+        """
         if service not in self.pass_list:
             print(f"This service does not exist")
-        self.pass_list[service].rem_pw(username)
+        if username:
+            self.pass_list[service].rem_pw(username)
+        else:
+            self.pass_list[service].logins = []
 
+    def rem_get(self, service:str):
+        """
+        Return a list of usernames for a given service for deletion
+        """
+        if service not in self.pass_list:
+            raise ValueError("Service name not in services")
+        login_list = self.pass_list[service]
+        results = []
+
+        for login in login_list.logins:
+            username = login.show_usr()
+            results.append(username)
+
+        return results
 
     def get_pw(self, service: str):
         """
@@ -210,10 +232,10 @@ class pwStruct:
         results = []
 
         now_ts = datetime.now(timezone.utc).timestamp()
-        for entry in login_list.logins:
-            username = entry.show_usr()
-            password = entry.show_pwd()
-            entry.last_accessed = now_ts
+        for login in login_list.logins:
+            username = login.show_usr()
+            password = login.show_pwd()
+            login.last_accessed = now_ts
             results.append((username, password))
 
         return results
@@ -232,21 +254,32 @@ class pwStruct:
                 "last_modified": self.last_modified,
             }
         }
-
+    def show_all(self):
+        result = []
+        services = self.pass_list.keys()
+        for service in services:
+            tmp = []
+            for login in self.pass_list[service].logins:
+                user = login.show_usr()
+                tmp.append(user)
+            result.append((service, tmp))
+        return result
+    
     def clear(self, file_path):
         """
         clear struct and clean json file
         """
         self.pass_list = {}
-        self.created = 0.0
-        self.last_modified = 0.0
+        now = datetime.now(timezone.utc).timestamp()
+        self.created = now
+        self.last_modified = now
         try:
             os.remove(file_path)
         except Exception as e:
             print(f"Failed to access '{file_path}' : {e}")
 
     def save_to_file(self, path: str): 
-        data = self.serialize
+        data = self.serialize()
         tmp_path = path + ".tmp"
         with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
