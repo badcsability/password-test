@@ -255,6 +255,9 @@ class pwStruct:
             }
         }
     def show_all(self):
+        """
+        return tuple of service and all users connected to each service
+        """
         result = []
         services = self.pass_list.keys()
         for service in services:

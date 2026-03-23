@@ -276,6 +276,8 @@ def main():
     init_pw = functions.add_parser("init")
 
     clear_pw = functions.add_parser("clear")
+
+    help_pw = functions.add_parser("help")
     
     args = parser.parse_args()
     command = args.command
@@ -304,7 +306,7 @@ def main():
         case "help":
             show_commands()
         case _:
-            print("Unknown command, please try again")
+            print("Unknown command; commands are: help, add, remove, change, get, show, init, clear")
     
 if __name__ == "__main__":
     main()
