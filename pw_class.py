@@ -13,7 +13,7 @@ class pw:
     """
     structure to store the login information of a single account
     """
-    def __init__(self, user, pwd, service, key, url="None", *, encrypted: bool = False):
+    def __init__(self, user:str, pwd:str, service:str, key, url="None", *, encrypted: bool = False):
         """
         Initialize a pw instance.
 
@@ -44,12 +44,14 @@ class pw:
     def show_pwd(self):
         return self.key.decrypt(self.pwd)
     
-    def update_pwd(self, new_pwd):
+    def update_pwd(self, new_pwd:str):
         self.pwd = self.key.encrypt(new_pwd)
+        self.last_accessed = datetime.now(timezone.utc).timestamp()
         
-    def update_usr(self, new_usr):
+    def update_usr(self, new_usr:str):
         self.user = self.key.encrypt(new_usr)
-        
+        self.last_accessed = datetime.now(timezone.utc).timestamp()
+
     def serialize(self):
         """
         convert login information to store into JSON file 
@@ -306,7 +308,7 @@ class pwStruct:
         try:
             data = json.loads(content)
         except json.JSONDecodeError as e:
-             RuntimeError(f"Invalid JSON in '{path}': {e}")
+             raise RuntimeError(f"Invalid JSON in '{path}': {e}")
 
         return cls.from_serialized(data, key_manager)
   

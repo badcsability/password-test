@@ -225,6 +225,9 @@ def get_pass():
     print(
         f"Password for login {choice} (username: {username}) has been copied to the clipboard."
     )
+
+def change_pass():
+    print(f"changed")
     
 def show_all():
     global pw_struct
@@ -233,7 +236,6 @@ def show_all():
     """
     data = pw_struct.show_all()
     print(data)
-
 
 def clear_all():
     global pw_struct
@@ -293,7 +295,7 @@ def main():
             rem_pass()
         case "change":
             ensure_initialized()
-            print("changed")
+            change_pass()
         case "get":
             ensure_initialized()
             get_pass()
