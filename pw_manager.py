@@ -227,7 +227,28 @@ def get_pass():
     )
 
 def change_pass():
-    print(f"changed")
+    """
+    change the password for a specific login, givng service and username as input
+    """
+    global pw_struct
+    input_service = input("Enter the site to change logins for: ")
+    service = input_service.strip()
+    if not service:
+        print("Error: service name must not be empty.")
+        return
+    input_username = input("Enter the username to change: ")
+    username = input_username.strip()
+    if not username:
+        print("Error: username must not be empty.")
+        return
+    input_password = getpass.getpass(prompt="Enter your new password: ")
+    password = input_password.strip()
+    if not password:
+        print("Error: password must not be empty.")
+        return
+    pw_struct.change_pw(service, username, password)
+    pw_struct.save_to_file(JSON_FILE_PATH)
+    print(f"Password for {username} in {service} has been changed")
     
 def show_all():
     global pw_struct
