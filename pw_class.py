@@ -140,9 +140,23 @@ class loginList:
         #print("added to loginlist")
 
     def rem_pw(self, usr:str):
+        """
+        remove a specific login from the list of logins
+        """
         for login in self.logins:
             if login.show_usr() == usr:
                 self.logins.remove(login)
+
+    def change_pw(self, usr:str, new_password:str):
+        """
+        change the password for a specific login, given username and new password as input
+        """
+        for login in self.logins:
+            if login.show_usr() == usr:
+                login.update_pwd(new_password)
+                login.last_accessed = datetime.now(timezone.utc).timestamp()
+                return
+        print(f"Username {usr} not found in {self.site_name}")
 
     @classmethod
     def from_serialized(cls, service_name: str, data: dict, key: KeyManager) -> "loginList":
@@ -242,9 +256,19 @@ class pwStruct:
 
         return results
 
+    def change_pw(self, service:str, username:str, new_password:str):
+        """
+        change the password for a specific login, given service and username as input
+        """
+        if service not in self.pass_list:
+            raise ValueError(f"Service {service} not in services")
+        self.pass_list[service].change_pw(username, new_password)
+        self.last_modified = datetime.now(timezone.utc).timestamp()
+
     def serialize(self):
         """
-        convert all lists of logins into json format
+        function to convert all lists of logins into json format
+        return a dictionary with the service names as keys and the login lists as values
         """
         return {
             "pass-list": {
@@ -284,6 +308,9 @@ class pwStruct:
             print(f"Failed to access '{file_path}' : {e}")
 
     def save_to_file(self, path: str): 
+        """
+        save the password structure to a file using a temporary file
+        """
         data = self.serialize()
         tmp_path = path + ".tmp"
         with open(tmp_path, "w", encoding="utf-8") as f:
@@ -295,6 +322,9 @@ class pwStruct:
 
     @classmethod
     def load_from_file(cls, path: str, key_manager: KeyManager) -> "pwStruct":
+        """
+        populates a pwStruct from a JSON file path
+        """
         if not os.path.exists(path):
             raise FileNotFoundError(f"File at {path} not found")
         if not os.path.isfile(path):
