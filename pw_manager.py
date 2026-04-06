@@ -72,7 +72,17 @@ def init():
     pw_struct = pwStruct.load_from_file(JSON_FILE_PATH, key_manager)
     print(f"Password store file '{JSON_FILE_PATH}' already exists.")
 
+def print_services():
+    """
+    print all services in the password structure
+    """
+    global pw_struct
+    services = pw_struct.get_services()
 
+    print(f"Current services:")
+    for s in services:
+        print(f"[{s}]")
+    print("--------------------------------")
 
 def add_pass():
     """
@@ -167,6 +177,7 @@ def get_pass():
     """
     return the usernames/passwords for a specific service
     """
+    print_services()
     input_service = input("Enter the site to find logins for: ")
     service = input_service.strip()
 
@@ -231,11 +242,13 @@ def change_pass():
     change the password for a specific login, givng service and username as input
     """
     global pw_struct
+    print_services()
     input_service = input("Enter the site to change logins for: ")
     service = input_service.strip()
     if not service:
         print("Error: service name must not be empty.")
         return
+    
     input_username = input("Enter the username to change: ")
     username = input_username.strip()
     if not username:
@@ -277,7 +290,8 @@ def show_commands():
     print(f"remove: Either removes all logins related to a service"
         " or a specific login for that service, if there are multiple")
     print(f"clear: Remove all logins and delete the JSON file")
-    print(f"show: Find a specific login given a service, copying the results to the clipboard")
+    print(f"get: Find a specific login given a service, copying the results to the clipboard")
+    print(f"show: Show all services and usernames")
     print(f"change: Change the information of a particular login given a service")
 def reset_debug():
     print("clear debug")

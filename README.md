@@ -69,7 +69,7 @@ Available commands:
 - `show`: Show all services and usernames.
 - `clear`: Delete all stored credentials and remove the JSON file.
 - `help`: Print command descriptions.
-- `change`: Reserved/placeholder command (not implemented yet).
+- `change`: Change the password for a stored login (service, username)
 
 ## Typical Workflow
 
@@ -119,5 +119,8 @@ Available commands:
 ## Known Limitations
 
 - No master password flow or key-rotation support.
-- `change` command is currently a stub.
 - Clipboard-based retrieval can expose passwords to other local apps.
+
+## Possible improvements
+- Implement hash-based system for lookup of usernames
+- Setup function to create .env and populate with relevant environment variables

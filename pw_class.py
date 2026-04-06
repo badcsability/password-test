@@ -294,6 +294,21 @@ class pwStruct:
             result.append((service, tmp))
         return result
     
+    def get_services(self):
+        """
+        return a list of all service names
+        """
+        return self.pass_list.keys()
+
+    def get_usernames(self, service:str):
+        """
+        return a list of all usernames for a given service
+        """
+        if service not in self.services:
+            print(f"Service {service} not in services")
+            return []
+        return self.pass_list[service].logins.show_usr()
+
     def clear(self, file_path):
         """
         clear struct and clean json file
@@ -318,7 +333,6 @@ class pwStruct:
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp_path, path)
-
 
     @classmethod
     def load_from_file(cls, path: str, key_manager: KeyManager) -> "pwStruct":

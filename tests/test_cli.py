@@ -14,6 +14,8 @@ def test_help_subcommand(cli_workdir: Path) -> None:
     assert "add:" in res.stdout
     assert "remove:" in res.stdout
     assert "show:" in res.stdout
+    assert "get:" in res.stdout
+    assert "clear:" in res.stdout
 
 
 def test_init_creates_store_and_key(cli_workdir: Path) -> None:
@@ -126,10 +128,62 @@ def test_add_get_show_remove_clear_flow(cli_workdir: Path) -> None:
     assert not store.exists()
 
 
-def test_change_subcommand_stub(cli_workdir: Path) -> None:
-    res = run_cli(cli_workdir, "change")
-    assert res.returncode == 0
-    assert "changed" in res.stdout
+def test_change_password(cli_workdir: Path) -> None:
+    # init first to create store and key
+    res_init = run_cli(cli_workdir, "init")
+    assert res_init.returncode == 0
+
+    # add a login we will later change
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(cli_workdir)
+
+    child = pexpect.spawn(
+        sys.executable,
+        [str(cli_workdir / "pw_manager.py"), "add"],
+        cwd=str(cli_workdir),
+        env=env,
+        encoding="utf-8",
+        timeout=15,
+    )
+    child.expect("Enter the site this login will be used for:")
+    child.sendline("github")
+    child.expect("Enter the username:")
+    child.sendline("alice")
+    child.expect("Enter your password:")
+    child.sendline("OldSecret!")
+    child.expect("Enter the url of the site, otherwise press enter:")
+    child.sendline("")
+    child.expect(pexpect.EOF)
+
+    # run the change subcommand to update the password
+    child = pexpect.spawn(
+        sys.executable,
+        [str(cli_workdir / "pw_manager.py"), "change"],
+        cwd=str(cli_workdir),
+        env=env,
+        encoding="utf-8",
+        timeout=15,
+    )
+    child.expect("Enter the site to change logins for:")
+    child.sendline("github")
+    child.expect("Enter the username to change:")
+    child.sendline("alice")
+    child.expect("Enter your new password:")
+    child.sendline("NewSecret!")
+    child.expect(pexpect.EOF)
+    out = child.before or ""
+    assert "Password for alice in github has been changed" in out
+
+    # verify on-disk data was actually updated by decrypting from the JSON store
+    from key_manager import KeyManager
+    from pw_class import pwStruct
+
+    store_path = cli_workdir / "pwstore.json"
+    env_path = cli_workdir / ".env"
+    key_manager = KeyManager.new_env(env_path)
+    pw_store = pwStruct.load_from_file(str(store_path), key_manager)
+    creds = pw_store.get_pw("github")
+    assert creds == [("alice", "NewSecret!")]
 
 
 def test_remove_requires_nonempty_service(cli_workdir: Path) -> None:
