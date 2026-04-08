@@ -213,23 +213,27 @@ def get_pass():
     for idx, (username, _password) in enumerate(creds, start=1):
         print(f"[{idx}] {username}")
 
-    choice_str = input(
-        "Enter the login number to copy its password (or press Enter to cancel): "
-    ).strip()
+    #loop input until valid input is given
+    while True:
+        choice_str = input(
+            "Enter the login number to copy its password (or press Enter to cancel): "
+        ).strip()
 
-    if choice_str == "":
-        print("Cancelled; no password was copied.")
-        return
+        if choice_str == "":
+            print("Cancelled; no password was copied.")
+            return
 
-    try:
-        choice = int(choice_str)
-    except ValueError:
-        print("Invalid selection. Please enter a number.")
-        return
+        try:
+            choice = int(choice_str)
+        except ValueError:
+            print("Invalid selection. Please enter a number.")
+            continue
 
-    if choice < 1 or choice > len(creds):
-        print("Selection out of range. No password was copied.")
-        return
+        if choice < 1 or choice > len(creds):
+            print("Selection out of range. Please enter a number from the list.")
+            continue
+
+        break
 
     username, password = creds[choice - 1]
     copy_to_clipboard(password)
@@ -243,21 +247,27 @@ def change_pass():
     """
     global pw_struct
     print_services()
-    input_service = input("Enter the site to change logins for: ")
-    service = input_service.strip()
-    if not service:
-        print("Error: service name must not be empty.")
-        return
+    #loop input until valid input is given
+    while True:
+        input_service = input("Enter the site to change logins for, or press enter to cancel: ")
+        service = input_service.strip()
+        if not service:
+            print("Invalid input: service name must not be empty.")
+            continue
+        if service == "":
+            print("Cancelled, no password was changed")
+            return
+        break
     
     input_username = input("Enter the username to change: ")
     username = input_username.strip()
     if not username:
-        print("Error: username must not be empty.")
+        print("Invalid input: username must not be empty.")
         return
     input_password = getpass.getpass(prompt="Enter your new password: ")
     password = input_password.strip()
     if not password:
-        print("Error: password must not be empty.")
+        print("Invalid input: password must not be empty.")
         return
     pw_struct.change_pw(service, username, password)
     pw_struct.save_to_file(JSON_FILE_PATH)
